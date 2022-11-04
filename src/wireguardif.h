@@ -67,7 +67,7 @@ struct wireguardif_peer {
 
   // End-point details (may be blank)
   ip_addr_t endpoint_ip;
-  u16_t endport_port;
+  u16_t endpoint_port;
   u16_t keep_alive;
 };
 
@@ -93,7 +93,7 @@ struct wireguardif_peer {
  *
  * // If you want to enable output connection
  * peer.endpoint_ip = peer_ip;
- * peer.endport_port = 12345;
+ * peer.endpoint_port = 12345;
  *
  * uint8_t wireguard_peer_index;
  * wireguardif_add_peer(netif, &peer, &wireguard_peer_index);

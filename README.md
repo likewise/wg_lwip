@@ -81,7 +81,7 @@ You will need to implement a platform file that provides four functions
 
     	// If we know the endpoint's address can add here
     	peer.endpoint_ip = IPADDR4_INIT_BYTES(10, 0, 0, 12);
-    	peer.endport_port = 12345;
+    	peer.endpoint_port = 12345;
 
     	// Register the new WireGuard peer with the netwok interface
     	wireguardif_add_peer(wg_netif, &peer, &wireguard_peer_index);

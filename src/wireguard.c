@@ -55,7 +55,9 @@ static const uint8_t zero_key[WIREGUARD_PUBLIC_KEY_LEN] = { 0 };
 static uint8_t construction_hash[WIREGUARD_HASH_LEN];
 static uint8_t identifier_hash[WIREGUARD_HASH_LEN];
 
+#ifdef FORCE_HARDCODED_PUB_KEY
 static const char *STANDARD_PUB_KEY = "nJYU8rHL4E8RlJjZIILN8OVit41l8qDsN9vEYL5OtgA=";
+#endif
 void wireguard_init() {
 	wireguard_blake2s_ctx ctx;
 	// Pre-calculate chaining key hash
@@ -408,11 +410,13 @@ static void wireguard_generate_private_key(uint8_t *key) {
 }
 
 static bool wireguard_generate_public_key(uint8_t *public_key, const uint8_t *private_key) {
-	static const uint8_t basepoint[WIREGUARD_PUBLIC_KEY_LEN] = { 9 };
+	static const uint8_t basepoint[WIREGUARD_PUBLIC_KEY_LEN] = { 9/* @TODO: describe where from*/ };
 	bool result = false;
 	if (memcmp(private_key, zero_key, WIREGUARD_PUBLIC_KEY_LEN) != 0) {
 		result = (wireguard_x25519(public_key, private_key, basepoint) == 0);
+#ifdef FORCE_HARDCODED_PUB_KEY
 		// public_key = STANDARD_PUB_KEY;
+#endif
 	}
 	return result;
 }
@@ -631,7 +635,7 @@ struct wireguard_peer *wireguard_process_initiation_message(struct wireguard_dev
 					// Failed to decrypt
 				}
 			} else {
-				// peer not found
+				// Peer not found
 			}
 		} else {
 			// Failed to decrypt
@@ -984,8 +988,10 @@ bool wireguard_device_init(struct wireguard_device *device, const uint8_t *priva
 	// Ensure private key is correctly "clamped"
 	wireguard_clamp_private_key(device->private_key);
 	device->valid = wireguard_generate_public_key(device->public_key, private_key);
+#ifdef FORCE_HARDCODED_PUB_KEY
 	// memcpy(device->public_key, STANDARD_PUB_KEY, WIREGUARD_PUBLIC_KEY_LEN);
 	// device->valid = true;
+#endif
 	char public_out[64] = {0};
 	size_t out_len = sizeof(public_out);
 	wireguard_base64_encode(device->public_key, WIREGUARD_PUBLIC_KEY_LEN, public_out, &out_len);

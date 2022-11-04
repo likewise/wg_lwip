@@ -48,14 +48,15 @@ err_t wireguard_setup(const struct wg_init_data init_data, struct netif *wg_neti
   // If we know the endpoint's address can add here
   if (!init_data.peer_ip.addr) {
   // IP4_ADDR(&peer.endpoint_ip, 16, 171, 45, 144);
+
     IP4_ADDR(&peer.endpoint_ip, 10, 0, 0, 11);
   } else {
     peer.endpoint_ip.addr = init_data.peer_ip.addr;
   }
 
-  peer.endport_port = 5555;
+  peer.endpoint_port = 5530;
 
-  // Register the new WireGuard peer with the netwok interface
+  // Register the new WireGuard peer with the network interface
   err = wireguardif_add_peer(wg_netif, &peer, &wg_peer_index);
   LWIP_ERROR("wireguardif_add_peer failed\n", err == ERR_OK, return ERR_ABRT);
 

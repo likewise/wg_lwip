@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.8)
 set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_FLAGS -pthread)
+set(CMAKE_C_FLAGS -lpthread)
 project(wg C)
 
-SET(GCC_LINK_FLAGS    "-Wall -g -pthread")
+SET(GCC_LINK_FLAGS "-Wall -g -lpthread")
 
 set (CMAKE_EXPORT_COMPILE_COMMANDS ON)
 

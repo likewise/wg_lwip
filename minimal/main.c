@@ -75,20 +75,29 @@ static struct option longopts[] = {
   {"debug", no_argument,        NULL, 'd'},
   /* help */
   {"help", no_argument, NULL, 'h'},
-  /* gateway address */
-  {"gateway", required_argument, NULL, 'g'},
-  /* ip address */
-  {"ipaddr", required_argument, NULL, 'i'},
-  /* netmask */
-  {"netmask", required_argument, NULL, 'm'},
-  /* ping destination */
-  {"trap_destination", required_argument, NULL, 't'},
-  /* wireguard peer ip address */
-  {"wg_peer_ipaddr", required_argument, NULL, 'a'},
-  /* wireguard peer public key */
-  {"wg_peer_pub_key", required_argument, NULL, 'p'},
-  /* wireguard private key */
-  {"wg_private_key", required_argument, NULL, 's'},
+
+  /* IP address of our TAP interface */
+  {"tap0-ipaddr", required_argument, NULL, 't'},
+  /* Netmask of our TAP interface */
+  {"tap0-netmask", required_argument, NULL, 'n'},
+  /* Gateway for our TAP interface */
+  {"tap0-gateway", required_argument, NULL, 'w'},
+
+  /* IP address of our Wireguard interface */
+  {"wg0-ipaddr", required_argument, NULL, 'i'},
+  /* Netmask of our Wireguard interface */
+  {"wg0-netmask", required_argument, NULL, 'm'},
+  /* Gateway for our Wireguard interface */
+  {"wg0-gateway", required_argument, NULL, 'g'},
+  /* Secret private key of our Wireguard interface */
+  {"wg0-private-key", required_argument, NULL, 's'},
+
+  /* Public key of one remote Wireguard peer */
+  {"peer-public", required_argument, NULL, 'p'},
+  /* Endpoint IP addres of one remote Wireguard peer */
+  /* @TODO this is actually NOT required - Wireguard can learn remote endpoint IP address */
+  /* This is only required if we are the Wireguard session initiator */
+  {"peer-ipaddr", required_argument, NULL, 'e'},
   /* new command line options go here! */
   {NULL,   0,                 NULL,  0}
 };
@@ -113,12 +122,12 @@ main(int argc, char **argv)
   struct netif wg_netif;
   struct wg_init_data wg_init_params;
   int ch;
-  char ip_str[16] = {0}, nm_str[16] = {0}, gw_str[16] = {0};
+  int success;
 
   /* startup defaults (may be overridden by one or more opts) */
-  IP4_ADDR(&gw, 192, 168, 1, 1);
   IP4_ADDR(&ipaddr, 192, 168, 1, 20);
   IP4_ADDR(&netmask, 255, 255, 255, 0);
+  IP4_ADDR(&gw, 192, 168, 1, 254);
 
 #if LWIP_SNMP
   trap_flag = 0;
@@ -126,7 +135,7 @@ main(int argc, char **argv)
   /* use debug flags defined by debug.h */
   debug_flags = LWIP_DBG_ON;
 
-  while ((ch = getopt_long(argc, argv, "dhg:i:m:a:p:s:", longopts, NULL)) != -1) {
+  while ((ch = getopt_long(argc, argv, "dht:n:w:i:m:g:e:p:s:", longopts, NULL)) != -1) {
     switch (ch) {
       case 'd':
         debug_flags |= (LWIP_DBG_ON|LWIP_DBG_TRACE|LWIP_DBG_STATE|LWIP_DBG_FRESH|LWIP_DBG_HALT);
@@ -135,42 +144,79 @@ main(int argc, char **argv)
         usage();
         exit(0);
         break;
-      case 'g':
-        ip4addr_aton(optarg, &wg_init_params.gateway);
+
+      // our host (tap0)
+      case 't':
+        success = ip4addr_aton(optarg, &ipaddr);
+        if (!success) exit(1);
         break;
+      case 'n':
+        success = ip4addr_aton(optarg, &netmask);
+        if (!success) exit(1);
+        break;
+      case 'w':
+        success = ip4addr_aton(optarg, &gw);
+        if (!success) exit(1);
+        break;
+
+      // our side of tunnel (wg0)
       case 'i':
-        ip4addr_aton(optarg, &wg_init_params.ip);
+        success = ip4addr_aton(optarg, &wg_init_params.ip);
+        if (!success) exit(1);
         break;
       case 'm':
-        ip4addr_aton(optarg, &wg_init_params.netmask);
+        success = ip4addr_aton(optarg, &wg_init_params.netmask);
+        if (!success) exit(1);
         break;
-      case 'a':
-        ip4addr_aton(optarg, &wg_init_params.peer_ip);
+      case 'g':
+        success = ip4addr_aton(optarg, &wg_init_params.gateway);
+        if (!success) exit(1);
         break;
-      case 'p':
-        /* TODO: add checking for char string param */
-        wg_init_params.peer_public_key = optarg;
+      // wireguard secret private key
       case 's':
         /* TODO: add checking for char string param */
         wg_init_params.private_key = optarg;
         break;
+
+      // peer public endpoint
+      case 'e':
+        success = ip4addr_aton(optarg, &wg_init_params.peer_ip);
+        break;
+      // peer public key
+      case 'p':
+        /* TODO: add checking for char string param */
+        wg_init_params.peer_public_key = optarg;
+        break;
+
       default:
         usage();
         break;
     }
   }
-  /* add the initialization params for the wireguard interface */
-  // wg_init_params.ip = ipaddr;
-  // wg_init_params.gateway = gw;
-  // wg_init_params.netmask = netmask;
-
   argc -= optind;
   argv += optind;
 
-  strncpy(ip_str, ip4addr_ntoa(&ipaddr), sizeof(ip_str));
-  strncpy(nm_str, ip4addr_ntoa(&netmask), sizeof(nm_str));
-  strncpy(gw_str, ip4addr_ntoa(&gw), sizeof(gw_str));
-  printf("Host at %s mask %s gateway %s\n", ip_str, nm_str, gw_str);
+  {
+    char ip_str[16] = {0}, nm_str[16] = {0}, gw_str[16] = {0};
+    strncpy(ip_str, ip4addr_ntoa(&ipaddr), sizeof(ip_str));
+    strncpy(nm_str, ip4addr_ntoa(&netmask), sizeof(nm_str));
+    strncpy(gw_str, ip4addr_ntoa(&gw), sizeof(gw_str));
+    printf("This host TAP (our Wireguard endpoint) at %s mask %s with gateway %s\n", ip_str, nm_str, gw_str);
+  }
+
+  {
+    char ip_str[16] = {0};
+    strncpy(ip_str, ip4addr_ntoa(&wg_init_params.peer_ip), sizeof(ip_str));
+    printf("Wireguard peer endpoint is %s.\n", ip_str);
+  }
+
+  {
+    char ip_str[16] = {0}, nm_str[16] = {0}, gw_str[16] = {0};
+    strncpy(ip_str, ip4addr_ntoa(&wg_init_params.ip), sizeof(ip_str));
+    strncpy(nm_str, ip4addr_ntoa(&wg_init_params.netmask), sizeof(nm_str));
+    strncpy(gw_str, ip4addr_ntoa(&wg_init_params.gateway), sizeof(gw_str));
+    printf("Wireguard host at %s mask %s with gateway %s\n", ip_str, nm_str, gw_str);
+  }
 
 #ifdef PERF
   perf_init("/tmp/minimal.perf");

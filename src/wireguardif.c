@@ -852,7 +852,7 @@ err_t wireguardif_add_peer(struct netif *netif, struct wireguardif_peer *p,
         if (wireguard_peer_init(device, peer, public_key, p->preshared_key)) {
 
           peer->connect_ip = p->endpoint_ip;
-          peer->connect_port = p->endport_port;
+          peer->connect_port = p->endpoint_port;
           peer->ip = peer->connect_ip;
           peer->port = peer->connect_port;
           if (p->keep_alive == WIREGUARDIF_KEEPALIVE_DEFAULT) {
@@ -879,7 +879,7 @@ err_t wireguardif_add_peer(struct netif *netif, struct wireguardif_peer *p,
   }
 
   uint32_t t2 = wireguard_sys_now();
-  printf("Adding peer took %ldms\r\n", (t2 - t1));
+  printf("Adding peer took %ums\r\n", (unsigned int)(t2 - t1));
 
   if (peer_index) {
     if (peer) {
@@ -1038,7 +1038,7 @@ err_t wireguardif_init(struct netif *netif) {
             uint32_t t1 = wireguard_sys_now();
             if (wireguard_device_init(device, private_key)) {
               uint32_t t2 = wireguard_sys_now();
-              printf("Device init took %ldms\r\n", (t2 - t1));
+              printf("Device init took %ums\r\n", (unsigned int)(t2 - t1));
 
 #if LWIP_CHECKSUM_CTRL_PER_NETIF
               NETIF_SET_CHECKSUM_CTRL(netif, NETIF_CHECKSUM_ENABLE_ALL);
@@ -1099,7 +1099,7 @@ void wireguardif_peer_init(struct wireguardif_peer *peer) {
   // Caller must provide 'public_key'
   peer->public_key = NULL;
   ip4_addr_set_any(&peer->endpoint_ip);
-  peer->endport_port = WIREGUARDIF_DEFAULT_PORT;
+  peer->endpoint_port = WIREGUARDIF_DEFAULT_PORT;
   peer->keep_alive = WIREGUARDIF_KEEPALIVE_DEFAULT;
   ip4_addr_set_any(&peer->allowed_ip);
   ip4_addr_set_any(&peer->allowed_mask);
