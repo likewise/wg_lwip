@@ -1,14 +1,14 @@
 #ifndef _WG_H_
 #define _WG_H_
 
-#include <netdb.h>
-#include <netinet/in.h>
+//#include <lwip/netdb.h>
+//#include <netinet/in.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
-#include <sys/types.h>
+//#include <sys/socket.h>
+//#include <sys/types.h>
 #include <unistd.h>
 #include <lwip/mem.h>
 
