@@ -82,8 +82,8 @@ set(CMAKE_ASM_COMPILER ${CROSS_COMPILE}gcc)
 set(CMAKE_C_COMPILER ${CROSS_COMPILE}gcc)
 set(CMAKE_CXX_COMPILER ${CROSS_COMPILE}g++)
 
-#SET (CMAKE_C_COMPILER_WORKS 1)
-#ET (CMAKE_CXX_COMPILER_WORKS 1)
+SET (CMAKE_C_COMPILER_WORKS 1)
+SET (CMAKE_CXX_COMPILER_WORKS 1)
 
 # We must set the OBJCOPY setting into cache so that it's available to the
 # whole project. Otherwise, this does not get set into the CACHE and therefore
