@@ -348,7 +348,7 @@
 /**
  * LWIP_TCP==1: Turn on TCP.
  */
-#define LWIP_TCP                        1
+#define LWIP_TCP                        0
 
 /*
    ----------------------------------
