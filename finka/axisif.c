@@ -125,15 +125,16 @@ low_level_output(struct netif *netif, struct pbuf *p)
   pbuf_copy_partial(p, buf, p->tot_len, 0);
 
   /* signal that packet should be sent(); */
-  written = write(axisif->fd, buf, p->tot_len);
-  if (written < p->tot_len) {
-    MIB2_STATS_NETIF_INC(netif, ifoutdiscards);
-    perror("axisif: write");
-    return ERR_IF;
-  } else {
-    MIB2_STATS_NETIF_ADD(netif, ifoutoctets, (u32_t)written);
-    return ERR_OK;
-  }
+  //written = write(axisif->fd, buf, p->tot_len);
+  //if (written < p->tot_len) {
+  //  MIB2_STATS_NETIF_INC(netif, ifoutdiscards);
+  //  perror("axisif: write");
+  //  return ERR_IF;
+  //} else {
+  //  MIB2_STATS_NETIF_ADD(netif, ifoutoctets, (u32_t)written);
+  //  return ERR_OK;
+  //}
+  return ERR_OK;
 }
 /*-----------------------------------------------------------------------------------*/
 /*
@@ -153,14 +154,14 @@ low_level_input(struct netif *netif)
   char buf[1518]; /* max packet size including VLAN excluding CRC */
   struct axisif *axisif = (struct axisif *)netif->state;
 
-  /* Obtain the size of the packet and put it into the "len"
-     variable. */
-  readlen = read(axisif->fd, buf, sizeof(buf));
-  if (readlen < 0) {
-    perror("read returned -1");
-    exit(1);
-  }
-  len = (u16_t)readlen;
+  ///* Obtain the size of the packet and put it into the "len"
+  //   variable. */
+  //readlen = read(axisif->fd, buf, sizeof(buf));
+  //if (readlen < 0) {
+  //  perror("read returned -1");
+  //  exit(1);
+  //}
+  //len = (u16_t)readlen;
 
   MIB2_STATS_NETIF_ADD(netif, ifinoctets, len);
 

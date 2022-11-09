@@ -1,12 +1,13 @@
+# https://five-embeddev.com/baremetal/cmake/
+# https://github.com/five-embeddev/riscv-scratchpad/blob/master/cmake/cmake/riscv.cmake
+
 cmake_minimum_required(VERSION 3.8)
 set(CMAKE_C_STANDARD 11)
-#set(CMAKE_C_FLAGS -lpthread)
-set(CMAKE_C_FLAGS)
+set(CMAKE_C_FLAGS "-specs=picolibc.specs -DPICOLIBC_INTEGER_PRINTF_SCANF -Wall -g")
 project(wg C)
 
-# On Linux
-#SET(GCC_LINK_FLAGS "-Wall -g -lpthread")
-SET(GCC_LINK_FLAGS "-Wall -g")
+SET(GCC_LINK_FLAGS "-Wall -g -nostartup -T./finka/linker.ld")
+SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wall -g -nostartfiles -T../finka/linker.ld")
 
 set (CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -45,7 +46,7 @@ src/crypto.c) # src/arch/sys_arch.c)
 #lwip-contrib/apps/tcpecho_raw/tcpecho_raw.c src/arch/sys_arch.c)
 
 # On bare-metal (RISC-V)
-add_executable(echop "${MINIMAL_DIR}" finka/main.c finka/axisif.c lwip-contrib/apps/udpecho_raw/udpecho_raw.c 
+add_executable(echop "${MINIMAL_DIR}" finka/crt0.c finka/main.c finka/axisif.c lwip-contrib/apps/udpecho_raw/udpecho_raw.c 
 lwip-contrib/apps/tcpecho_raw/tcpecho_raw.c src/bare-metal-arch/sys_arch.c)
 
 #minimal/custom_timers.c)

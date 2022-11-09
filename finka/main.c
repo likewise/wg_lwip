@@ -74,6 +74,7 @@ unsigned char debug_flags;
 u8_t snmpauthentraps_set = 2;
 #endif
 
+#if 0
 static struct option longopts[] = {
   /* turn on debugging output (if build with LWIP_DEBUG) */
   {"debug", no_argument,        NULL, 'd'},
@@ -117,6 +118,61 @@ usage(void)
     printf("-%c --%s\n",longopts[i].val, longopts[i].name);
   }
 }
+#endif
+
+void abort(void) { while (1); }
+void exit(int e) { (void)e; while (1); }
+void _cirqhandler(void) {}
+
+static int uart_putc(char c, FILE *file) {
+//	(void)file;
+//#if 1
+//	/* Translate newline into cr/lf */
+//	if (c == '\n')
+//		uart_putc('\r', file);
+//#endif
+//	/* Send character */
+//  uart_write(UART, c);
+//	/* Return character */
+//	return (int) (uint8_t) c;
+}
+
+static int uart_getc(FILE *file)
+{
+//	uint8_t	c;
+//	(void)file;
+//	/* Read input */
+//	c = (uint8_t)uart_read(UART);
+//
+//#if 1
+//	/* Translate return into newline */
+//	if (c == '\r')
+//		c = '\n';
+//#endif
+//	/* Echo */
+//	uart_putc(c, stdout);
+//	return (int)c;
+return 0;
+}
+
+/* Create a single FILE object for stdin and stdout */
+static FILE __stdio = FDEV_SETUP_STREAM(uart_putc, uart_getc, NULL, _FDEV_SETUP_RW);
+
+/*
+ * Use the picolibc __strong_reference macro to share one variable for
+ * stdin/stdout/stderr. This saves space, but prevents the application
+ * from updating them independently.
+ */
+
+#ifdef __strong_reference
+#define STDIO_ALIAS(x) __strong_reference(stdin, x);
+#else
+#define STDIO_ALIAS(x) FILE *const x = &__stdio;
+#endif
+
+FILE *const stdin = &__stdio;
+STDIO_ALIAS(stdout);
+STDIO_ALIAS(stderr);
 
 int
 main(int argc, char **argv)
@@ -125,19 +181,29 @@ main(int argc, char **argv)
   struct netif netif;
   struct netif wg_netif;
   struct wg_init_data wg_init_params;
-  int ch;
-  int success;
 
-  /* startup defaults (may be overridden by one or more opts) */
-  IP4_ADDR(&ipaddr, 192, 168, 1, 20);
-  IP4_ADDR(&netmask, 255, 255, 255, 0);
-  IP4_ADDR(&gw, 192, 168, 1, 254);
+  /* our adres outside the tunnel */
+  IP4_ADDR(&ipaddr,  192, 168, 255,   2);
+  IP4_ADDR(&netmask, 255, 255, 255,   0);
+  IP4_ADDR(&gw,      192, 168, 255,   1);
 
+  /* our address in the tunnel */
+  IP4_ADDR(&wg_init_params.ip,       10,   8,   0,   2);
+  IP4_ADDR(&wg_init_params.netmask, 255, 255, 255,   0);
+  IP4_ADDR(&wg_init_params.gateway,  10,   8,   0,   1);
+
+  /* peer remote endpoint address outside the tunnel */
+  IP4_ADDR(&wg_init_params.peer_ip, 192, 168, 255,   1);
+  //wg_init_params.peer_public_key = "";
+
+#if 0
 #if LWIP_SNMP
   trap_flag = 0;
 #endif
   /* use debug flags defined by debug.h */
   debug_flags = LWIP_DBG_ON;
+  int success;
+  int ch;
 
   while ((ch = getopt_long(argc, argv, "dht:n:w:i:m:g:e:p:s:", longopts, NULL)) != -1) {
     switch (ch) {
@@ -146,35 +212,29 @@ main(int argc, char **argv)
         break;
       case 'h':
         usage();
-        exit(0);
+        return 0;
         break;
 
       // our host (tap0)
       case 't':
         success = ip4addr_aton(optarg, &ipaddr);
-        if (!success) exit(1);
         break;
       case 'n':
         success = ip4addr_aton(optarg, &netmask);
-        if (!success) exit(1);
         break;
       case 'w':
         success = ip4addr_aton(optarg, &gw);
-        if (!success) exit(1);
         break;
 
       // our side of tunnel (wg0)
       case 'i':
         success = ip4addr_aton(optarg, &wg_init_params.ip);
-        if (!success) exit(1);
         break;
       case 'm':
         success = ip4addr_aton(optarg, &wg_init_params.netmask);
-        if (!success) exit(1);
         break;
       case 'g':
         success = ip4addr_aton(optarg, &wg_init_params.gateway);
-        if (!success) exit(1);
         break;
       // wireguard secret private key
       case 's':
@@ -199,6 +259,7 @@ main(int argc, char **argv)
   }
   argc -= optind;
   argv += optind;
+#endif
 
   {
     char ip_str[16] = {0}, nm_str[16] = {0}, gw_str[16] = {0};
@@ -228,7 +289,7 @@ main(int argc, char **argv)
 
   lwip_init();
 
-  printf("TCP/IP initialized.\n");
+  printf("lwIP initialized.\n");
 
   netif_add(&netif, &ipaddr, &netmask, &gw, NULL, axisif_init, ethernet_input);
 
@@ -238,8 +299,9 @@ main(int argc, char **argv)
 #endif
 
   udpecho_raw_init();
+#if LWIP_TCP
   tcpecho_raw_init();
-
+#endif
   err = wireguard_setup(wg_init_params, &wg_netif);
   LWIP_ERROR("wireguard_setup failed\n", err == ERR_OK, return ERR_ABRT);
   netif_set_default(&netif);
